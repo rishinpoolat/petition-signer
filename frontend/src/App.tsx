@@ -1,15 +1,37 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Pages
+import Home from './pages/Home';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 const App: React.FC = () => {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100">
+    <AuthProvider>
+      <Router>
         <Routes>
-          <Route path="/" element={<div>Home Page</div>} />
+          {/* Public routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+
+          {/* Protected routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch all route */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </div>
-    </Router>
+      </Router>
+    </AuthProvider>
   );
 };
 
