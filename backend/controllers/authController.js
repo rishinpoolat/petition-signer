@@ -1,17 +1,13 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { supabase } from '../config/supabase.js';
+import { validBioIds } from '../config/bioIds.js';
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });
 };
-
-const validBioIds = [
-  'K1YL8VA2HG', '7DMPYAZAP2', 'D05HPPQNJ4', '2WYIM3QCK9', 'DHKFIYHMAZ',
-  'LZK7P0X0LQ', 'H5C98XCENC', '6X6I6TSUFG', 'QTLCWUS8NB', 'Y4FC3F9ZGS'
-];
 
 export const signup = async (req, res) => {
   try {

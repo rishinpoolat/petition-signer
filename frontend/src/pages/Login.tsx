@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
+import NavLink from '../components/NavLink';
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -20,6 +21,8 @@ const Login: React.FC = () => {
 
   const from = location.state?.from?.pathname || '/';
 
+  
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -29,9 +32,9 @@ const Login: React.FC = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <NavLink to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
               create a new account
-            </Link>
+            </NavLink>
           </p>
         </div>
         <Formik
