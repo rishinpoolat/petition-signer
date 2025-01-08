@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Formik, Form, Field } from 'formik';
 import * as Yup from 'yup';
-import NavLink from '../components/NavLink';
 
 const loginSchema = Yup.object().shape({
   email: Yup.string()
@@ -16,11 +15,11 @@ const loginSchema = Yup.object().shape({
 const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [error, setError] = useState<string>('');
 
-  // Changed default navigation to dashboard
-  const from = location.state?.from?.pathname || '/dashboard';
+  const getDashboardPath = (role: string) => {
+    return role === 'admin' ? '/admin/dashboard' : '/dashboard';
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -31,19 +30,22 @@ const Login: React.FC = () => {
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
-            <NavLink to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
+            <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
               create a new account
-            </NavLink>
+            </Link>
           </p>
         </div>
+        
         <Formik
           initialValues={{ email: '', password: '' }}
           validationSchema={loginSchema}
           onSubmit={async (values, { setSubmitting }) => {
             try {
               await login(values.email, values.password);
-              navigate('/dashboard', { replace: true }); // Always navigate to dashboard
+              const dashboardPath = getDashboardPath('admin');
+              navigate(dashboardPath, { replace: true });
             } catch (err: any) {
+              console.error('Login error:', err);
               setError(err.response?.data?.error || 'Failed to login');
               setSubmitting(false);
             }
