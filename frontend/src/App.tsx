@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
@@ -8,6 +8,23 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import PetitionerDashboard from './pages/PetitionerDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+
+// Component to handle route redirection based on auth status and role
+const RouteGuard = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Redirect to appropriate dashboard based on role
+  return <Navigate to={user.role === 'admin' ? '/admin/dashboard' : '/dashboard'} replace />;
+};
 
 const App: React.FC = () => {
   return (
@@ -17,20 +34,32 @@ const App: React.FC = () => {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          
+          {/* Home route with auth check */}
+          <Route path="/" element={<RouteGuard />} />
 
-          {/* Protected routes */}
+          {/* Protected Petitioner route */}
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute requireAdmin={false}>
                 <PetitionerDashboard />
               </ProtectedRoute>
             }
           />
+
+          {/* Protected Admin route */}
           <Route
-            path="/"
-            element={<Home />}
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute requireAdmin={true}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
           />
+
+          {/* Public Home route */}
+          <Route path="/home" element={<Home />} />
 
           {/* Catch all route */}
           <Route path="*" element={<Navigate to="/" replace />} />

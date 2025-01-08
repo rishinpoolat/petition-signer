@@ -18,7 +18,7 @@ const PetitionerDashboard: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await petitionService.getAllPetitions();
-      console.log('Fetched petitions:', data);
+
       setPetitions(data);
     } catch (err: any) {
       console.error('Error in fetchPetitions:', err);
