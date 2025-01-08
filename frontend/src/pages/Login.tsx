@@ -19,9 +19,8 @@ const Login: React.FC = () => {
   const location = useLocation();
   const [error, setError] = useState<string>('');
 
-  const from = location.state?.from?.pathname || '/';
-
-  
+  // Changed default navigation to dashboard
+  const from = location.state?.from?.pathname || '/dashboard';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -43,7 +42,7 @@ const Login: React.FC = () => {
           onSubmit={async (values, { setSubmitting }) => {
             try {
               await login(values.email, values.password);
-              navigate(from, { replace: true });
+              navigate('/dashboard', { replace: true }); // Always navigate to dashboard
             } catch (err: any) {
               setError(err.response?.data?.error || 'Failed to login');
               setSubmitting(false);
@@ -57,12 +56,12 @@ const Login: React.FC = () => {
                   {error}
                 </div>
               )}
-              <div className="rounded-md shadow-sm -space-y-px">
+              <div className="rounded-md shadow-sm space-y-4">
                 <div>
                   <Field
                     name="email"
                     type="email"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                     placeholder="Email address"
                   />
                   {errors.email && touched.email && (
@@ -73,7 +72,7 @@ const Login: React.FC = () => {
                   <Field
                     name="password"
                     type="password"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                     placeholder="Password"
                   />
                   {errors.password && touched.password && (

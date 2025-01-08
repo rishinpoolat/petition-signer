@@ -1,25 +1,28 @@
 import { Router } from 'express';
-import { db } from '../config/supabase.js';
+import { supabase } from '../config/supabase.js';
 
 const router = Router();
 
 router.get('/test-connection', async (req, res) => {
   try {
-    const testResult = await db.testConnection();
-    
-    if (!testResult.success) {
-      console.error('Database connection test failed:', testResult.error);
+    // Test connection by trying to fetch a single row from petitioners
+    const { data, error } = await supabase
+      .from('petitioners')
+      .select('*')
+      .limit(1);
+
+    if (error) {
+      console.error('Database connection test failed:', error);
       return res.status(500).json({
         status: 'error',
         message: 'Database connection test failed',
-        error: testResult.error
+        error: error.message
       });
     }
     
     res.json({ 
       status: 'success',
       message: 'Supabase connection successful',
-      data: testResult.result,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
