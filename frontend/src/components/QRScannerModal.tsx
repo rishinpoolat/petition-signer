@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import QRScanner from './QRScanner';
@@ -12,19 +12,51 @@ interface QRScannerModalProps {
 
 const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, onScan }) => {
   const [error, setError] = useState<string | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
     setError(null);
     onClose();
-  };
+  }, [onClose]);
 
   const handleError = (errorMessage: string) => {
     setError(errorMessage);
   };
 
+  // Handle cleanup when the modal closes
+  useEffect(() => {
+    if (!isOpen && cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+    }
+  }, [isOpen]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
+    };
+  }, []);
+
+  const setCleanupFunction = useCallback((cleanup: () => void) => {
+    cleanupRef.current = cleanup;
+  }, []);
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={handleClose}>
+      <Dialog 
+        as="div" 
+        className="relative z-50" 
+        onClose={handleClose}
+        static
+      >
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -58,6 +90,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, o
                   </Dialog.Title>
                   <button
                     onClick={handleClose}
+                    type="button"
                     className="text-gray-400 hover:text-gray-500 focus:outline-none"
                   >
                     <XMarkIcon className="h-6 w-6" />
@@ -74,6 +107,10 @@ const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, o
                   {isOpen && (
                     <QRScanner 
                       onScan={(scannedBioId) => {
+                        if (cleanupRef.current) {
+                          cleanupRef.current();
+                          cleanupRef.current = null;
+                        }
                         setError(null);
                         onScan(scannedBioId);
                         handleClose();
