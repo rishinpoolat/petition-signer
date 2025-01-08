@@ -56,23 +56,36 @@ export const signup = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Create auth user first
+    const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true
+    });
+
+    if (authError) {
+      console.error('Auth error:', authError);
+      return res.status(400).json({ error: 'Error creating user' });
+    }
+
+    // Then create petitioner profile
     const { data: newUser, error: insertError } = await supabase
       .from('petitioners')
-      .insert([
-        {
-          email,
-          full_name: fullName,
-          date_of_birth: dateOfBirth,
-          password_hash: hashedPassword,
-          bio_id: bioId,
-        },
-      ])
+      .insert([{
+        id: authUser.user.id,
+        email,
+        full_name: fullName,
+        date_of_birth: dateOfBirth,
+        password_hash: hashedPassword,
+        bio_id: bioId,
+      }])
       .select()
       .single();
 
     if (insertError) {
       console.error('Database error:', insertError);
-      return res.status(400).json({ error: 'Error creating user' });
+      await supabase.auth.admin.deleteUser(authUser.user.id);
+      return res.status(400).json({ error: 'Error creating user profile' });
     }
 
     const token = generateToken(newUser.id);
@@ -91,6 +104,7 @@ export const signup = async (req, res) => {
         email: newUser.email,
         fullName: newUser.full_name,
         bioId: newUser.bio_id,
+        role: 'petitioner'
       },
       token
     });
@@ -145,22 +159,22 @@ export const login = async (req, res) => {
       });
     }
 
-    const { data: user, error: userError } = await supabase
+    const { data: petitioner, error: userError } = await supabase
       .from('petitioners')
       .select('*')
       .eq('email', email)
       .single();
 
-    if (userError || !user) {
+    if (userError || !petitioner) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    const isValidPassword = await bcrypt.compare(password, petitioner.password_hash);
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = generateToken(user.id);
+    const token = generateToken(petitioner.id);
 
     res.cookie('jwt', token, {
       httpOnly: true,
@@ -172,10 +186,10 @@ export const login = async (req, res) => {
     res.json({
       success: true,
       data: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        bioId: user.bio_id,
+        id: petitioner.id,
+        email: petitioner.email,
+        fullName: petitioner.full_name,
+        bioId: petitioner.bio_id,
         role: 'petitioner'
       },
       token
@@ -199,5 +213,52 @@ export const logout = async (req, res) => {
   } catch (error) {
     console.error('Server error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const verifyToken = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Check petitioners table first
+    const { data: petitioner, error: petitionerError } = await supabase
+      .from('petitioners')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (petitioner) {
+      return res.json({
+        user: {
+          id: petitioner.id,
+          email: petitioner.email,
+          fullName: petitioner.full_name,
+          bioId: petitioner.bio_id,
+          role: 'petitioner'
+        }
+      });
+    }
+
+    // If not found in petitioners, check admins
+    const { data: admin, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (admin) {
+      return res.json({
+        user: {
+          id: admin.id,
+          email: admin.email,
+          role: 'admin'
+        }
+      });
+    }
+
+    res.status(404).json({ error: 'User not found' });
+  } catch (error) {
+    console.error('Token verification error:', error);
+    res.status(401).json({ error: 'Invalid token' });
   }
 };

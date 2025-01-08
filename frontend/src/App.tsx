@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import PetitionerDashboard from './pages/PetitionerDashboard';
 
 const App: React.FC = () => {
   return (
@@ -19,12 +20,16 @@ const App: React.FC = () => {
 
           {/* Protected routes */}
           <Route
-            path="/"
+            path="/dashboard"
             element={
               <ProtectedRoute>
-                <Home />
+                <PetitionerDashboard />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/"
+            element={<Home />}
           />
 
           {/* Catch all route */}

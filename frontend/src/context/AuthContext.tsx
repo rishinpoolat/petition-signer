@@ -36,6 +36,19 @@ const api = axios.create({
   }
 });
 
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -50,11 +63,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    }
-    setIsLoading(false);
-  }, [token]);
+    const verifyToken = async () => {
+      try {
+        const storedToken = localStorage.getItem('token');
+        if (!storedToken) {
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await api.get('/auth/verify');
+        const userData = response.data.user;
+
+        setUser(userData);
+        setToken(storedToken);
+      } catch (error) {
+        localStorage.removeItem('token');
+        setUser(null);
+        setToken(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    verifyToken();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
@@ -62,12 +94,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { token, data } = response.data;
       
       localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       setToken(token);
       setUser(data);
     } catch (error) {
-      console.error('Authentication error:', error);
       throw error;
     }
   };
@@ -78,12 +108,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { token, data: userData } = response.data;
       
       localStorage.setItem('token', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       setToken(token);
       setUser(userData);
     } catch (error) {
-      console.error('Authentication error:', error);
       throw error;
     }
   };
@@ -91,11 +119,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await api.post('/auth/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
     } finally {
       localStorage.removeItem('token');
-      delete api.defaults.headers.common['Authorization'];
       setToken(null);
       setUser(null);
     }
