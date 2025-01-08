@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 import QRScanner from './QRScanner';
@@ -11,9 +11,20 @@ interface QRScannerModalProps {
 }
 
 const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, onScan }) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleClose = () => {
+    setError(null);
+    onClose();
+  };
+
+  const handleError = (errorMessage: string) => {
+    setError(errorMessage);
+  };
+
   return (
     <Transition appear show={isOpen} as={Fragment}>
-      <Dialog as="div" className="relative z-50" onClose={onClose}>
+      <Dialog as="div" className="relative z-50" onClose={handleClose}>
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -46,23 +57,29 @@ const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, o
                     Scan BioID QR Code
                   </Dialog.Title>
                   <button
-                    onClick={onClose}
+                    onClick={handleClose}
                     className="text-gray-400 hover:text-gray-500 focus:outline-none"
                   >
                     <XMarkIcon className="h-6 w-6" />
                   </button>
                 </div>
 
+                {error && (
+                  <div className="mb-4 p-3 rounded bg-red-50 text-red-700 text-sm">
+                    {error}
+                  </div>
+                )}
+
                 <div className="mt-4">
                   {isOpen && (
                     <QRScanner 
                       onScan={(scannedBioId) => {
+                        setError(null);
                         onScan(scannedBioId);
-                        onClose();
+                        handleClose();
                       }}
-                      onError={(error) => {
-                        console.error('QR Scan Error:', error);
-                      }}
+                      onError={handleError}
+                      onClose={handleClose}
                     />
                   )}
                 </div>
@@ -74,7 +91,7 @@ const QRScannerModal: React.FC<QRScannerModalProps> = memo(({ isOpen, onClose, o
                   <button
                     type="button"
                     className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-offset-2"
-                    onClick={onClose}
+                    onClick={handleClose}
                   >
                     Cancel
                   </button>

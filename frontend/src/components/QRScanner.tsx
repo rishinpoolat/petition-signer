@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { BrowserQRCodeReader } from '@zxing/browser';
+import { BrowserQRCodeReader, IScannerControls } from '@zxing/browser';
 import { Result } from '@zxing/library';
 
 interface QRScannerProps {
   onScan: (bioId: string) => void;
   onError?: (error: string) => void;
+  onClose: () => void;
 }
 
 interface VideoInputDevice {
@@ -12,9 +13,35 @@ interface VideoInputDevice {
   label: string;
 }
 
-const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
+const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError, onClose }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserQRCodeReader | null>(null);
+  const scannerControlsRef = useRef<IScannerControls | null>(null);
+
+  const cleanupCamera = () => {
+    // Stop the QR scanner
+    if (scannerControlsRef.current) {
+      try {
+        scannerControlsRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping scanner:', error);
+      }
+    }
+
+    // Stop all video tracks
+    if (videoRef.current?.srcObject) {
+      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
+      tracks.forEach(track => {
+        track.stop();
+        track.enabled = false;
+      });
+      videoRef.current.srcObject = null;
+    }
+
+    // Clear references
+    readerRef.current = null;
+    scannerControlsRef.current = null;
+  };
 
   useEffect(() => {
     const startScanning = async () => {
@@ -35,13 +62,14 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
         )?.deviceId || videoInputDevices[0].deviceId;
 
         if (readerRef.current && videoRef.current) {
-          await readerRef.current.decodeFromVideoDevice(
+          const controls = await readerRef.current.decodeFromVideoDevice(
             selectedDeviceId,
             videoRef.current,
             (result: Result | undefined) => {
               if (result) {
                 const scannedText = result.getText();
                 if (scannedText && scannedText.match(/^[A-Z0-9]{10}$/)) {
+                  cleanupCamera();  // Clean up when successful scan
                   onScan(scannedText);
                 } else if (onError) {
                   onError('Invalid QR code format');
@@ -49,6 +77,9 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
               }
             }
           );
+          
+          // Store the controls for cleanup
+          scannerControlsRef.current = controls;
         }
       } catch (err: any) {
         if (onError) {
@@ -66,10 +97,7 @@ const QRScanner: React.FC<QRScannerProps> = ({ onScan, onError }) => {
 
     // Cleanup function
     return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-        tracks.forEach(track => track.stop());
-      }
+      cleanupCamera();
     };
   }, [onScan, onError]);
 
