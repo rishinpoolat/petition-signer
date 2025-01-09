@@ -4,6 +4,7 @@ import { supabase } from '../config/supabase.js';
 const router = express.Router();
 
 // GET /slpp/petitions - Return details of all petitions
+// Note: When mounted at /slpp, this will be accessible at /slpp/petitions
 router.get('/petitions', async (req, res) => {
   try {
     let query = supabase
@@ -21,9 +22,10 @@ router.get('/petitions', async (req, res) => {
       `)
       .order('created_at', { ascending: false });
 
-    // Add status filter if provided
-    if (req.query.status) {
-      query = query.eq('status', req.query.status);
+    // Filter by status if provided
+    const status = req.query.status?.toLowerCase();
+    if (status === 'open' || status === 'closed') {
+      query = query.eq('status', status);
     }
 
     const { data, error } = await query;
@@ -32,11 +34,11 @@ router.get('/petitions', async (req, res) => {
 
     // Format response according to API specification
     const formattedPetitions = data.map(petition => ({
-      petition_id: petition.id,
+      petition_id: petition.id.toString(),
       status: petition.status,
       petition_title: petition.title,
       petition_text: petition.content,
-      petitioner: petition.petitioners?.email,
+      petitioner: petition.petitioners?.email || '',
       signatures: petition.signature_count.toString(),
       response: petition.response || ""
     }));
@@ -45,45 +47,6 @@ router.get('/petitions', async (req, res) => {
   } catch (error) {
     console.error('API Error:', error);
     res.status(500).json({ error: 'Failed to fetch petitions' });
-  }
-});
-
-// GET /slpp/petitions?status=open - Return details of open petitions
-router.get('/petitions/open', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('petition_stats')
-      .select(`
-        id,
-        status,
-        title,
-        content,
-        petitioner_id,
-        petitioners (email),
-        signature_count,
-        response,
-        created_at
-      `)
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-
-    // Format response according to API specification
-    const formattedPetitions = data.map(petition => ({
-      petition_id: petition.id,
-      status: petition.status,
-      petition_title: petition.title,
-      petition_text: petition.content,
-      petitioner: petition.petitioners?.email,
-      signatures: petition.signature_count.toString(),
-      response: petition.response || ""
-    }));
-
-    res.json({ petitions: formattedPetitions });
-  } catch (error) {
-    console.error('API Error:', error);
-    res.status(500).json({ error: 'Failed to fetch open petitions' });
   }
 });
 
