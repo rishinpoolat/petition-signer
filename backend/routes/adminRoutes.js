@@ -1,11 +1,11 @@
 import express from 'express';
-import { authenticateAdmin } from '../middleware/auth';
+import { protect, adminOnly } from '../middleware/authMiddleware.js';
 import { 
   loginAdmin, 
   updateSignatureThreshold,
   getPetitionStats,
   respondToPetition
-} from '../controllers/adminController';
+} from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -13,7 +13,8 @@ const router = express.Router();
 router.post('/login', loginAdmin);
 
 // Protected admin routes
-router.use(authenticateAdmin);
+router.use(protect); // First verify authentication
+router.use(adminOnly); // Then verify admin role
 
 // Update signature threshold for petitions
 router.put('/threshold', updateSignatureThreshold);
