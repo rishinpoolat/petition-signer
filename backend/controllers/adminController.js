@@ -1,5 +1,5 @@
-import { supabase } from '../config/supabaseClient';
-import bcrypt from 'bcrypt';
+import { supabase } from '../config/supabase.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 export const loginAdmin = async (req, res) => {

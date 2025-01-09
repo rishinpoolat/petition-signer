@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import petitionRoutes from './routes/petitionRoutes.js';
 import apiRoutes from './routes/apiRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';  // Fixed extension
 
 // Load environment variables
 dotenv.config();
@@ -32,6 +33,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/petitions', petitionRoutes);
+app.use('/api/admin', adminRoutes);  // Added admin routes
 app.use('/slpp', apiRoutes); // Open Data REST API endpoints
 
 // Health check endpoint
