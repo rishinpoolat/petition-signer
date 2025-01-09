@@ -2,6 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import DashboardCharts from '../components/dashboard/DashboardCharts';
+import StatsGrid from '../components/dashboard/StatsGrid';
+import ThresholdManager from '../components/dashboard/ThresholdManager';
+import PetitionsTable from '../components/dashboard/PetitionsTable';
+import ResponseModal from '../components/dashboard/ResponseModal';
+import type { DashboardStats, PetitionStats } from '../types/dashboard';
 
 const api = axios.create({
   baseURL: 'http://localhost:5002/api',
@@ -24,25 +30,6 @@ api.interceptors.request.use(
   }
 );
 
-interface PetitionStats {
-  id: string;
-  title: string;
-  content: string;
-  status: 'open' | 'closed';
-  signature_count: number;
-  signature_threshold: number;
-  created_at: string;
-  response?: string;
-}
-
-interface DashboardStats {
-  totalPetitions: number;
-  openPetitions: number;
-  closedPetitions: number;
-  totalSignatures: number;
-  petitions: PetitionStats[];
-}
-
 const AdminDashboard: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -61,7 +48,6 @@ const AdminDashboard: React.FC = () => {
     fetchStats();
   }, []);
 
-  // Clear update message after 5 seconds
   useEffect(() => {
     if (updateMessage) {
       const timer = setTimeout(() => {
@@ -195,205 +181,44 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* Signature Threshold Management */}
-        <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h3 className="text-lg font-medium mb-4">Signature Threshold Management</h3>
-          <div className="flex items-center space-x-4">
-            <div className="flex-1 max-w-xs">
-              <label htmlFor="threshold" className="block text-sm font-medium text-gray-700 mb-2">
-                Required Signatures
-              </label>
-              <input
-                type="number"
-                id="threshold"
-                value={threshold}
-                onChange={(e) => setThreshold(Math.max(0, parseInt(e.target.value) || 0))}
-                className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                min="0"
-                placeholder="Enter signature threshold"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                This threshold will apply to all open petitions
-              </p>
-            </div>
-            <div className="flex items-end">
-              <button
-                onClick={handleUpdateThreshold}
-                disabled={isUpdating}
-                className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                  isUpdating
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-indigo-600 hover:bg-indigo-700'
-                }`}
-              >
-                {isUpdating ? 'Updating...' : 'Update Threshold'}
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Threshold Manager */}
+        {stats && (
+          <ThresholdManager
+            threshold={threshold}
+            isUpdating={isUpdating}
+            onThresholdChange={setThreshold}
+            onUpdateThreshold={handleUpdateThreshold}
+          />
+        )}
 
-        {/* Statistics Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium">Total Petitions</h3>
-            <p className="text-3xl font-bold text-indigo-600">{stats?.totalPetitions || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium">Open Petitions</h3>
-            <p className="text-3xl font-bold text-green-600">{stats?.openPetitions || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium">Closed Petitions</h3>
-            <p className="text-3xl font-bold text-gray-600">{stats?.closedPetitions || 0}</p>
-          </div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium">Total Signatures</h3>
-            <p className="text-3xl font-bold text-blue-600">{stats?.totalSignatures || 0}</p>
-          </div>
-        </div>
+        {/* Stats Grid */}
+        {stats && <StatsGrid stats={stats} />}
+
+        {/* Analytics Charts */}
+        {stats && <DashboardCharts stats={stats} />}
 
         {/* Petitions Table */}
-        <div className="bg-white shadow-lg rounded-lg overflow-hidden">
-          <div className="px-6 py-4 border-b">
-            <h3 className="text-lg font-medium">Petitions Management</h3>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Signatures
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Threshold
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {stats?.petitions.map((petition) => (
-                  <tr key={petition.id}>
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{petition.title}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex px-2 text-xs font-semibold leading-5 rounded-full ${
-                          petition.status === 'open'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {petition.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {petition.signature_count}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {petition.signature_threshold}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium">
-                      {petition.status === 'open' &&
-                        petition.signature_count >= petition.signature_threshold && (
-                          <button
-                            onClick={() => handleRespond(petition)}
-                            className="text-indigo-600 hover:text-indigo-900"
-                          >
-                            Respond
-                          </button>
-                        )}
-                      {petition.status === 'closed' && (
-                        <button
-                          onClick={() => handleRespond(petition)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          View Response
-                        </button>
-                      )}
-                      {petition.status === 'open' &&
-                        petition.signature_count < petition.signature_threshold && (
-                          <span className="text-yellow-600">
-                            Needs {petition.signature_threshold - petition.signature_count} more
-                            signatures
-                          </span>
-                        )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
+        {stats && (
+          <PetitionsTable
+            petitions={stats.petitions}
+            onRespond={handleRespond}
+          />
+        )}
 
-      
-      {/* Response Modal */}
-      {selectedPetition && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h3 className="text-lg font-medium mb-4">
-                {selectedPetition.status === 'open' ? 'Respond to Petition' : 'View Petition Response'}: {selectedPetition.title}
-              </h3>
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Petition Content
-                </label>
-                <div className="bg-gray-50 p-4 rounded text-sm">
-                  {selectedPetition.content}
-                </div>
-              </div>
-              <div className="mb-4">
-                <label htmlFor="response" className="block text-sm font-medium text-gray-700 mb-2">
-                  Parliamentary Response
-                </label>
-                <textarea
-                  id="response"
-                  rows={6}
-                  value={response}
-                  onChange={(e) => setResponse(e.target.value)}
-                  disabled={selectedPetition.status === 'closed'}
-                  className={`mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm ${
-                    selectedPetition.status === 'closed' ? 'bg-gray-50' : ''
-                  }`}
-                  placeholder={selectedPetition.status === 'open' ? "Enter the parliamentary response..." : ""}
-                />
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setSelectedPetition(null)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-                >
-                  {selectedPetition.status === 'closed' ? 'Close' : 'Cancel'}
-                </button>
-                {selectedPetition.status === 'open' && (
-                  <button
-                    onClick={handleSubmitResponse}
-                    disabled={isSubmitting || !response.trim()}
-                    className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
-                      isSubmitting || !response.trim()
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
-                    }`}
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Response'}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        {/* Response Modal */}
+        {selectedPetition && (
+          <ResponseModal
+            petition={selectedPetition}
+            response={response}
+            isSubmitting={isSubmitting}
+            onClose={() => setSelectedPetition(null)}
+            onResponseChange={setResponse}
+            onSubmit={handleSubmitResponse}
+          />
+        )}
+      </main>
     </div>
   );
 };
+
 export default AdminDashboard;
