@@ -1,6 +1,6 @@
 import React from 'react';
 import { Petition } from '../services/petitionService';
-import { CalendarIcon, UserIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, UserIcon, ClockIcon, CheckBadgeIcon } from '@heroicons/react/24/outline';
 
 interface PetitionListProps {
   petitions: Petition[];
@@ -42,15 +42,17 @@ const PetitionList: React.FC<PetitionListProps> = ({
               <h2 className="text-xl font-semibold text-gray-900">
                 {petition.title}
               </h2>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  petition.status === 'open'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {petition.status.charAt(0).toUpperCase() + petition.status.slice(1)}
-              </span>
+              <div className="flex space-x-2">
+                <span
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    petition.status === 'open'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {petition.status.charAt(0).toUpperCase() + petition.status.slice(1)}
+                </span>
+              </div>
             </div>
 
             {/* Petition Metadata */}
@@ -84,26 +86,33 @@ const PetitionList: React.FC<PetitionListProps> = ({
               </div>
             )}
 
-            {/* Action Button */}
-            {petition.status === 'open' && petition.petitioner_id !== currentUserId && (
-              <div className="mt-4">
+            {/* Petition Status and Actions */}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              {petition.petitioner_id === currentUserId && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                  <CheckBadgeIcon className="h-4 w-4 mr-1" />
+                  Your Petition
+                </span>
+              )}
+              
+              {petition.signed && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <CheckBadgeIcon className="h-4 w-4 mr-1" />
+                  Signed
+                </span>
+              )}
+              
+              {petition.status === 'open' && 
+               !petition.signed && 
+               petition.petitioner_id !== currentUserId && (
                 <button
                   onClick={() => onSignPetition(petition.id)}
                   className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   Sign this petition
                 </button>
-              </div>
-            )}
-
-            {/* Show "Your Petition" badge if user is the creator */}
-            {petition.petitioner_id === currentUserId && (
-              <div className="mt-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
-                  Your Petition
-                </span>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       ))}

@@ -12,6 +12,7 @@ export interface Petition {
   response?: string;
   signature_threshold: number;
   signature_count?: number;
+  signed?: boolean;  // Optional for backward compatibility
 }
 
 export interface CreatePetitionData {
@@ -48,6 +49,12 @@ const petitionService = {
     return response.data;
   },
 
+  // New method for getting petitions with signed status
+  getPetitionsWithSignedStatus: async () => {
+    const response = await api.get('/petitions/with-signed-status');
+    return response.data;
+  },
+
   getPetition: async (id: number) => {
     const response = await api.get(`/petitions/${id}`);
     return response.data;
@@ -61,11 +68,6 @@ const petitionService = {
   signPetition: async (petitionId: number) => {
     const response = await api.post(`/petitions/${petitionId}/sign`);
     return response.data;
-  },
-
-  hasSignedPetition: async (petitionId: number) => {
-    const response = await api.get(`/petitions/${petitionId}/signed`);
-    return response.data.signed;
   }
 };
 
