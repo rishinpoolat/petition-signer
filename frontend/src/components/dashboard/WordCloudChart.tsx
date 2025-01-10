@@ -1,16 +1,21 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
+import * as d3 from 'd3';
+import cloud from 'd3-cloud';
 import type { PetitionStats } from '../../types/dashboard';
 
 interface WordCloudChartProps {
   petitions: PetitionStats[];
 }
 
-interface WordFrequency {
+interface Word {
   text: string;
-  value: number;
+  size: number;
+  rotate?: number;
 }
 
 const WordCloudChart: React.FC<WordCloudChartProps> = ({ petitions }) => {
+  const svgRef = useRef<SVGSVGElement>(null);
+
   const words = useMemo(() => {
     // Combine all petition titles and content
     const allText = petitions
@@ -18,60 +23,105 @@ const WordCloudChart: React.FC<WordCloudChartProps> = ({ petitions }) => {
       .join(' ')
       .toLowerCase();
 
-    // Remove common words and special characters
-    const stopWords = new Set(['and', 'the', 'to', 'a', 'of', 'for', 'in', 'on', 'at', 'is', 'it']);
-    const words = allText
+    // Common words to filter out
+    const stopWords = new Set([
+      'and', 'the', 'to', 'a', 'of', 'for', 'in', 'on', 'at', 'is', 'it',
+      'that', 'this', 'with', 'be', 'have', 'from', 'or', 'by', 'but', 'not',
+      'what', 'all', 'when', 'we', 'you', 'can', 'an', 'has', 'are', 'as',
+      'been', 'if', 'into', 'which', 'such', 'they', 'no', 'there', 'their',
+      'will', 'would', 'make', 'them', 'these', 'should', 'was', 'than'
+    ]);
+
+    // Extract and clean words
+    const wordsArray = allText
       .replace(/[^\w\s]/g, '')
       .split(/\s+/)
-      .filter(word => word.length > 3 && !stopWords.has(word));
+      .filter(word => 
+        word.length > 3 &&
+        !stopWords.has(word) &&
+        !(/^\d+$/.test(word))
+      );
 
     // Count word frequencies
     const wordFreq: { [key: string]: number } = {};
-    words.forEach(word => {
+    wordsArray.forEach(word => {
       wordFreq[word] = (wordFreq[word] || 0) + 1;
     });
 
-    // Convert to array of objects and sort by frequency
+    // Convert to array and map to size
     return Object.entries(wordFreq)
-      .map(([text, value]) => ({ text, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 50); // Take top 50 words
+      .map(([text, freq]) => ({
+        text,
+        size: Math.sqrt(freq) * 10 + 10 // Scale the size
+      }))
+      .sort((a, b) => b.size - a.size)
+      .slice(0, 100);
   }, [petitions]);
 
-  // Function to determine font size based on frequency
-  const getFontSize = (frequency: number) => {
-    const minSize = 12;
-    const maxSize = 48;
-    const maxFreq = Math.max(...words.map(w => w.value));
-    return minSize + ((frequency / maxFreq) * (maxSize - minSize));
-  };
+  useEffect(() => {
+    if (!svgRef.current || !words.length) return;
 
-  // Function to get a color based on frequency
-  const getColor = (frequency: number) => {
-    const maxFreq = Math.max(...words.map(w => w.value));
-    const intensity = Math.floor((frequency / maxFreq) * 255);
-    return `rgb(${intensity}, ${Math.floor(intensity/2)}, ${255 - intensity})`;
-  };
+    // Clear previous content
+    d3.select(svgRef.current).selectAll("*").remove();
+
+    const width = svgRef.current.clientWidth || 800;
+    const height = 400;
+
+    const layout = cloud()
+      .size([width, height])
+      .words(words)
+      .padding(5)
+      .rotate(() => (~~(Math.random() * 2) - 1) * 90)
+      .fontSize(d => (d as Word).size)
+      .on("end", draw);
+
+    layout.start();
+
+    function draw(words: Word[]) {
+      const svg = d3.select(svgRef.current);
+      const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+      const group = svg
+        .append("g")
+        .attr("transform", `translate(${width / 2},${height / 2})`);
+
+      group
+        .selectAll("text")
+        .data(words)
+        .enter()
+        .append("text")
+        .style("font-size", d => `${d.size}px`)
+        .style("font-family", "Impact")
+        .style("fill", (_, i) => color(i.toString()))
+        .attr("text-anchor", "middle")
+        .attr("transform", d => `translate(${(d as any).x},${(d as any).y})rotate(${(d as any).rotate})`)
+        .text(d => d.text)
+        .on("mouseover", function() {
+          d3.select(this)
+            .transition()
+            .style("font-size", d => `${(d as Word).size * 1.2}px`)
+            .style("cursor", "pointer");
+        })
+        .on("mouseout", function() {
+          d3.select(this)
+            .transition()
+            .style("font-size", d => `${(d as Word).size}px`);
+        });
+    }
+  }, [words]);
 
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h3 className="text-lg font-medium mb-4">Popular Topics in Petitions</h3>
-      <div className="flex flex-wrap justify-center gap-4 p-4 min-h-[300px]">
-        {words.map((word, index) => (
-          <span
-            key={index}
-            className="inline-block cursor-pointer transition-transform hover:scale-110"
-            style={{
-              fontSize: `${getFontSize(word.value)}px`,
-              color: getColor(word.value),
-              padding: '5px',
-              transform: `rotate(${Math.random() * 30 - 15}deg)`,
-            }}
-            title={`Frequency: ${word.value}`}
-          >
-            {word.text}
-          </span>
-        ))}
+      <div className="w-full" style={{ height: "400px" }}>
+        <svg
+          ref={svgRef}
+          width="100%"
+          height="100%"
+          className="w-full h-full"
+          viewBox="0 0 800 400"
+          preserveAspectRatio="xMidYMid meet"
+        />
       </div>
     </div>
   );
