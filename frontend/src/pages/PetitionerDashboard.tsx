@@ -17,8 +17,7 @@ const PetitionerDashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await petitionService.getAllPetitions();
-
+      const data = await petitionService.getPetitionsWithSignedStatus();
       setPetitions(data);
     } catch (err: any) {
       console.error('Error in fetchPetitions:', err);
@@ -48,7 +47,7 @@ const PetitionerDashboard: React.FC = () => {
     try {
       setError(null);
       await petitionService.signPetition(petitionId);
-      await fetchPetitions(); // Refresh the list to update signature count
+      await fetchPetitions(); // Refresh the list to update signature count and signed status
     } catch (err: any) {
       console.error('Error in handleSignPetition:', err);
       setError(err.response?.data?.error || err.message || 'Failed to sign petition');
