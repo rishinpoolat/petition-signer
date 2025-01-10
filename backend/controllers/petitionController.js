@@ -84,6 +84,41 @@ export const getPetition = async (req, res) => {
   }
 };
 
+// New method to get all petitions with signed status
+export const getPetitionsWithSignedStatus = async (req, res) => {
+  try {
+    // Get all petitions first
+    const { data: petitions, error: petitionsError } = await supabase
+      .from('petition_stats')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (petitionsError) throw petitionsError;
+
+    // Get all signatures for current user
+    const { data: userSignatures, error: signaturesError } = await supabase
+      .from('signatures')
+      .select('petition_id')
+      .eq('petitioner_id', req.user.id);
+
+    if (signaturesError) throw signaturesError;
+
+    // Create a Set of signed petition IDs for efficient lookup
+    const signedPetitionIds = new Set(userSignatures?.map(sig => sig.petition_id) || []);
+
+    // Add signed status to each petition
+    const petitionsWithStatus = petitions.map(petition => ({
+      ...petition,
+      signed: signedPetitionIds.has(petition.id)
+    }));
+
+    res.json(petitionsWithStatus);
+  } catch (error) {
+    console.error('Error fetching petitions with signed status:', error);
+    res.status(500).json({ error: 'Failed to fetch petitions' });
+  }
+};
+
 export const createPetition = async (req, res) => {
   try {
     const { title, content } = req.body;
