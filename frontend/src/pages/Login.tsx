@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Formik, Form, Field } from 'formik';
@@ -33,12 +33,17 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to your account
+            Petitioner Sign In
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}
             <Link to="/signup" className="font-medium text-indigo-600 hover:text-indigo-500">
               create a new account
+            </Link>
+          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            <Link to="/admin-login" className="font-medium text-gray-600 hover:text-gray-500">
+              Committee Officer? Login here
             </Link>
           </p>
         </div>
@@ -55,10 +60,10 @@ const Login: React.FC = () => {
             try {
               setError('');
               await login(values.email, values.password, values.rememberMe);
-              const dashboardPath = getDashboardPath(
-                values.email === 'admin@petition.parliament.sr' ? 'admin' : 'petitioner'
-              );
-              navigate(dashboardPath, { replace: true });
+              
+              // Determine which dashboard to navigate to based on email
+              const isAdmin = values.email === 'admin@petition.parliament.sr';
+              navigate(isAdmin ? '/admin/dashboard' : '/dashboard', { replace: true });
             } catch (err: any) {
               console.error('Login error:', err);
               setError(err.response?.data?.error || 'Failed to login');

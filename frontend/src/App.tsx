@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import PetitionerDashboard from './pages/PetitionerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminLogin from './pages/AdminLogin';
 
 // Component to handle route redirection based on auth status and role
 const RouteGuard = () => {
@@ -33,6 +34,7 @@ const App: React.FC = () => {
         <Routes>
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/signup" element={<Signup />} />
           
           {/* Home route with auth check */}
