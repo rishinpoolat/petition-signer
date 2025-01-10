@@ -12,10 +12,11 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
   isLoading: boolean;
+  rememberedEmail: string | null;
 }
 
 interface SignupData {
@@ -61,6 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [isLoading, setIsLoading] = useState(true);
+  const [rememberedEmail, setRememberedEmail] = useState<string | null>(
+    localStorage.getItem('rememberedEmail')
+  );
 
   useEffect(() => {
     const verifyToken = async () => {
@@ -88,12 +92,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyToken();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe: boolean = false) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { token, data } = response.data;
       
       localStorage.setItem('token', token);
+      
+      // Handle remember me functionality
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+        setRememberedEmail(email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        setRememberedEmail(null);
+      }
       
       setToken(token);
       setUser(data);
@@ -121,6 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await api.post('/auth/logout');
     } finally {
       localStorage.removeItem('token');
+      // Keep rememberedEmail if it exists
+      const savedEmail = localStorage.getItem('rememberedEmail');
+      setRememberedEmail(savedEmail);
       setToken(null);
       setUser(null);
     }
@@ -132,7 +148,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     login,
     signup,
     logout,
-    isLoading
+    isLoading,
+    rememberedEmail
   };
 
   return (
