@@ -14,9 +14,6 @@ import {
 
 const router = express.Router();
 
-// Public routes - for REST API
-router.get('/slpp/petitions', getAllPetitions);
-
 // Admin routes - require admin role
 router.get('/stats', protect, adminOnly, getPetitionStats);
 router.put('/threshold', protect, adminOnly, updateThreshold);
