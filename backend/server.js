@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import petitionRoutes from './routes/petitionRoutes.js';
 import apiRoutes from './routes/apiRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 
 // Load environment variables
 dotenv.config();
@@ -23,6 +24,9 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
+
+// Apply rate limiter to all routes
+app.use(rateLimiter);
 
 // Request logging middleware
 app.use((req, res, next) => {
