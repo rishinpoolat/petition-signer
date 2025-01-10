@@ -13,6 +13,7 @@ import {
 } from 'chart.js';
 import { Bar, Line, Doughnut } from 'react-chartjs-2';
 import type { DashboardStats, ChartData } from '../../types/dashboard';
+import WordCloudChart from './WordCloudChart';
 
 // Register ChartJS components
 ChartJS.register(
@@ -105,77 +106,82 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({ stats }) => {
   }, [stats.petitions, stats.totalPetitions]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-      {/* Signatures Trend Chart */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Signatures Trend</h3>
-        <div className="h-64">
-          <Line
-            data={signaturesTrendData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'top' as const,
-                },
-                title: {
-                  display: false,
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                },
-              },
-            }}
-          />
-        </div>
-      </div>
+    <div className="space-y-6 mb-6">
+      {/* Word Cloud Chart - Added at the top */}
+      <WordCloudChart petitions={stats.petitions} />
 
-      {/* Petition Status Distribution */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Petition Status Distribution</h3>
-        <div className="h-64">
-          <Doughnut
-            data={statusDistributionData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'top' as const,
-                },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Threshold Achievement Chart */}
-      <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
-        <h3 className="text-lg font-medium mb-4">Threshold Achievement</h3>
-        <div className="h-64">
-          <Bar
-            data={thresholdComparisonData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  position: 'top' as const,
-                },
-              },
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    stepSize: 1,
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Signatures Trend Chart */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Signatures Trend</h3>
+          <div className="h-64">
+            <Line
+              data={signaturesTrendData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top' as const,
+                  },
+                  title: {
+                    display: false,
                   },
                 },
-              },
-            }}
-          />
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Petition Status Distribution */}
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h3 className="text-lg font-medium mb-4">Petition Status Distribution</h3>
+          <div className="h-64">
+            <Doughnut
+              data={statusDistributionData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top' as const,
+                  },
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Threshold Achievement Chart */}
+        <div className="bg-white p-6 rounded-lg shadow md:col-span-2">
+          <h3 className="text-lg font-medium mb-4">Threshold Achievement</h3>
+          <div className="h-64">
+            <Bar
+              data={thresholdComparisonData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'top' as const,
+                  },
+                },
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    ticks: {
+                      stepSize: 1,
+                    },
+                  },
+                },
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>
