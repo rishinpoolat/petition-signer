@@ -3,7 +3,7 @@ const rateLimit = new Map();
 
 // Rate limit configuration
 const WINDOW_SIZE = 15 * 60 * 1000; // 15 minutes in milliseconds
-const MAX_REQUESTS = 1000; // Maximum requests per window
+const MAX_REQUESTS = 250; // Maximum requests per window
 
 export const rateLimiter = (req, res, next) => {
   const ip = req.ip || req.connection.remoteAddress;
